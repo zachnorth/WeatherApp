@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Firebase Web Start</title>
+        <style media="screen">
+            body {
+                display: flex;
+                min-height: 100vh;
+                width: 100%;
+                padding: 0;
+                margin: 0;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            }
+
+            #uploader {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 50%;
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <progress value="0" max="100" id="uploader">0%</progress>
+        <input type="file" value="upload" id="fileButton" />
+
+            <!-- The core Firebase JS SDK is always required and must be listed first -->
+            <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-app.js"></script>
+
+            <!-- TODO: Add SDKs for Firebase products that you want to use
+                https://firebase.google.com/docs/web/setup#available-libraries -->
+
+            <script>
+            // Your web app's Firebase configuration
+            var firebaseConfig = {
+                apiKey: "AIzaSyD9RZqrzAMhNYCc4pFkfQu8JL5eT17NuuQ",
+                authDomain: "weatherapp-281918.firebaseapp.com",
+                databaseURL: "https://weatherapp-281918.firebaseio.com",
+                projectId: "weatherapp-281918",
+                storageBucket: "weatherapp-281918.appspot.com",
+                messagingSenderId: "487339409939",
+                appId: "1:487339409939:web:b3f89866ccc286a8c3b5e6"
+            };
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+
+
+            var uploader = document.getElementById('uploader');
+            var fileButton = document.getElementById('fileButton');
+
+            fileButton.addEventListener('change', function(e) {
+
+                //Get File
+                var file = e.target.files[0];
+
+                //Storage Ref
+
+                var storageRef = firebase.storage().ref('sweet_gifs/' + file.name);
+
+                //upload file
+
+                var task = storageRef.put(file);
+
+                //update progrerss bar
+
+                task.on('state_changed', function progress(snapshot) {
+                    var percentage = (snapshot.bytesTransferred / 
+                    snapshot.totalBytes) * 100;
+                    uploader.value = percentage;
+                },
+                function error(err) {
+
+                },
+                
+                function complete() {
+
+                });
+            });
+            </script>
+
+
+    </body>
+</html>

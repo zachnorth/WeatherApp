@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Weather App</title>
+
+
+    <link rel="stylesheet" href="CSS/styles.css">
+
+    <script type="text/javascript" src="./city.list.json"></script>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD9RZqrzAMhNYCc4pFkfQu8JL5eT17NuuQ&callback=initMap&libraries=places&v=weekly"
+    defer></script>
+</head>
+<body>
+
+
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.15.5/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+        https://firebase.google.com/docs/web/setup#available-libraries -->
+
+    <script>
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+        apiKey: "AIzaSyD9RZqrzAMhNYCc4pFkfQu8JL5eT17NuuQ",
+        authDomain: "weatherapp-281918.firebaseapp.com",
+        databaseURL: "https://weatherapp-281918.firebaseio.com",
+        projectId: "weatherapp-281918",
+        storageBucket: "weatherapp-281918.appspot.com",
+        messagingSenderId: "487339409939",
+        appId: "1:487339409939:web:b3f89866ccc286a8c3b5e6"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    </script>
+
+
+
+    <div id="container">
+            <div class="Row">
+                <div class="Column">
+                    <div id="city">
+                        <p id="city"></p>
+                    </div>
+                </div>
+                <div class="Column">
+                    <div id="temperature">
+                        <p id="temp"></p>
+                    </div>
+                </div>
+                <div class="Column">
+                    <div id="wind">
+                        <p id="wind_speed">Wind: </p>
+                    </div>
+                </div>
+                <div class="Column">
+                    <div id="weather">
+                        <p id="clouds">Clouds: </p>
+                    </div>
+                </div>
+            </div>
+
+        <div id="map"></div>
+
+        <div id="searchbar">
+            <input
+                id="pac-input"
+                class="controls"
+                type="text"
+                placeholder="Search Box"
+                style="float: left;"
+            />
+        </div>
+        
+        
+
+
+    </div>
+
+    
+    <script>
+        (function(exports) {
+            "use strict";
+
+            function initMap() {
+
+                var louisville = {lat: 39.9778, lng: -105.14417};
+
+                var map = new google.maps.Map(
+                    document.getElementById('map'), {
+                        zoom: 11,
+                        center: louisville,
+                        mapTypeId: "roadmap"
+                        }
+                );
+
+                var input = document.getElementById("pac-input");
+                var searchBox = new google.maps.places.SearchBox(input);
+                map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+                map.addListener("bounds_changed", function() {
+                    searchBox.setBounds(map.getBounds());
+                });
+
+                var markers = [];
+
+                searchBox.addListener("places_changed", function() {
+
+                    weatherBalloon(document.getElementById('pac-input').value);
+
+                    var places = searchBox.getPlaces();
+
+                    if(places.length == 0) {
+                        return;
+                    }
+
+                    markers.forEach(function(marker) {
+                        marker.setMap(null);
+                    });
+                    markers = [];
+
+                    var bounds = new google.maps.LatLngBounds();
+                    places.forEach(function(place) {
+                        if(!place.geometry) {
+                            console.log("Returned place contains no geometry");
+                            return;
+                        }
+
+                        var icon = {
+                            url: place.icon,
+                            size: new google.maps.Size(71, 71),
+                            origin: new google.maps.Point(0, 0),
+                            anchor: new google.maps.Point(17, 34),
+                            scaledSize: new google.maps.Size(25, 25)
+                        };
+
+                        markers.push(
+                            new google.maps.Marker({
+                                map: map,
+                                icon: icon,
+                                title: place.name,
+                                position: place.geometry.location
+                            })
+                        )
+
+                        if (place.geometry.viewport) {
+                            // Only geocodes have viewport.
+                            bounds.union(place.geometry.viewport);
+                        } else {
+                            bounds.extend(place.geometry.location);
+                        }
+
+                    });
+                    map.fitBounds(bounds);
+
+                });
+            }
+
+            exports.initMap = initMap;
+
+            
+            function weatherBalloon( city ) {
+                var key = '64b22929798c8de427f91fc709b9cb90';
+                fetch('https://api.openweathermap.org/data/2.5/weather?q=' + city + '&appid=' + key + '&units=imperial')
+                .then(function(resp) { return resp.json() })
+                .then(function(data) {
+                    console.log(data);
+
+                    document.getElementById('temp').innerHTML = 'High: ' + data.main['temp_max'] + ' &nbsp &nbsp &nbsp &nbsp Low: ' + data.main.temp_min;
+                    document.getElementById('city').innerHTML = '<b>' + data['name'] + '</b><br>&nbsp' + data.weather[0].description + '&nbsp' + data.main['temp'] + '<img src="http://openweathermap.org/img/wn/' + data.weather[0].icon + '@2x.png" width="50" height="50"/>';
+                    document.getElementById('wind_speed').innerHTML = document.getElementById('wind_speed').innerHTML + data.wind.speed + ' mph';
+
+                    if(0 <= data.clouds.all < 33) {
+
+                        document.getElementById('clouds').innerHTML = 'Clouds: Clear';
+                    } else if(33 <= data.clouds.all < 66) {
+                        document.getElementById('clouds').innerHTML = 'Clouds: Partly Cloudy';
+                    } else if(66 <= data.clouds.all) {
+                        document.getElementById('clouds').innerHTML = 'Clouds: Cloudy';
+                    }
+
+                    var direction = parseInt(data.wind['deg']);
+
+
+                    if(0 <= direction && direction <= 22 || 338 <= direction && direction <= 360) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> North';
+                    } else if(23 <= direction && direction <= 67) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> North-East';
+                    } else if(68 <= direction && direction <= 112) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> East';
+                    } else if(113 <= direction && direction <= 157) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> South-East';
+                    }else if(158 <= direction && direction <= 202) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> South';
+                    } else if(203 <= direction && direction <= 247) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> South-West';
+                    }else if(248 <= direction && direction <= 292) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> West';
+                    } else if(293 <= direction && direction <= 337) {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: &nbsp ' + data.wind.speed + 'mph @ ' + data.wind.deg + '<span>&#176;</span> North-West';
+                    }else {
+                        document.getElementById('wind_speed').innerHTML = 'Wind: No Wind';
+                    }
+
+                });
+            }
+
+            window.onload = function() {
+                weatherBalloon('Boulder,CO,USA');
+            }
+
+        })((this.window = this.window || {}));
+    </script>
+
+    
+</body>
+
+</html>
